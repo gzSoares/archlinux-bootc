@@ -1,25 +1,18 @@
 # pacotes_necessarios
-# =============================================================================
-# Pacotes OPCIONAIS instalados via pacman no Containerfile (último bloco).
-# Apenas pacotes dos repos oficiais do Arch (core, extra, multilib).
-# Pacotes AUR devem ser instalados manualmente pelo usuário em runtime.
-#
-# Cada linha é um nome de pacote. Linhas com # são ignoradas.
-# =============================================================================
+# Optional packages installed via pacman at build time.
+# Official Arch repos only (core, extra, multilib).
+# AUR packages must be installed at runtime.
+# One package per line. Lines starting with # are ignored.
 
-# --- Ferramentas de desenvolvimento ---
+# Development tools
 buildah
 podman
 
-# --- Fontes extras ---
+# Extra fonts
 ttf-fira-code
-ttf-hack-nerd
 
-# --- Utilitários de rede ---
+# Network utilities
 openssh
 
-# --- Compactadores adicionais ---
+# Additional compression
 unrar
-
-# --- Multimídia ---
-ffmpegthumbs
