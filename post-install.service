@@ -1,0 +1,19 @@
+[Unit]
+Description=Pós-instalação do primeiro boot (archlinux-bootc KDE)
+# Precisa de rede e do Flatpak system helper
+After=network-online.target flatpak-system-helper.service
+Wants=network-online.target
+# Não executa novamente se o serviço já foi desabilitado
+ConditionPathExists=/usr/bin/post-install.sh
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/post-install.sh
+RemainAfterExit=yes
+# Timeout alto porque dkms compila o módulo NVIDIA do zero
+TimeoutStartSec=600
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

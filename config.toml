@@ -1,0 +1,71 @@
+# config.toml — bootc-image-builder
+# Generates an Anaconda ISO from ghcr.io/gzsoares/archlinux-bootc
+#
+# Usage:
+#   mkdir -p output
+#   sudo podman run --rm -it --privileged --pull=newer \
+#     --security-opt label=type:unconfined_t \
+#     -v ./output:/output \
+#     -v ./config.toml:/config.toml:ro \
+#     -v /var/lib/containers/storage:/var/lib/containers/storage \
+#     quay.io/centos-bootc/bootc-image-builder:latest \
+#     --type anaconda-iso \
+#     --rootfs btrfs \
+#     ghcr.io/gzsoares/archlinux-bootc:latest
+
+# -----------------------------------------------------------------------------
+# Default user created during installation
+# Change password hash with: openssl passwd -6
+# -----------------------------------------------------------------------------
+[[customizations.user]]
+name = "user"
+groups = ["wheel", "video", "audio", "network", "storage", "optical", "input"]
+password = "$6$rounds=65536$changeme$REPLACETHISWITHAREALHASH"
+
+[[customizations.user]]
+name = "root"
+password = "!"  # root login disabled
+
+# -----------------------------------------------------------------------------
+# Anaconda modules to enable
+# -----------------------------------------------------------------------------
+[customizations.installer.modules]
+enable = [
+  "org.fedoraproject.Anaconda.Modules.Storage",
+  "org.fedoraproject.Anaconda.Modules.Users",
+  "org.fedoraproject.Anaconda.Modules.Network",
+  "org.fedoraproject.Anaconda.Modules.Timezone",
+  "org.fedoraproject.Anaconda.Modules.Localization",
+]
+
+# -----------------------------------------------------------------------------
+# Kickstart — partitioning, locale, timezone
+# -----------------------------------------------------------------------------
+[customizations.installer.kickstart]
+contents = """
+# Language and timezone
+lang en_US.UTF-8
+keyboard us
+timezone UTC --utc
+
+# Btrfs partitioning
+clearpart --all --initlabel
+zerombr
+
+# EFI partition
+part /boot/efi --fstype=efi --size=600 --fsoptions="umask=0077,shortname=winnt"
+
+# /boot
+part /boot --fstype=ext4 --size=2048
+
+# Btrfs physical volume (rest of disk)
+part btrfs.01 --fstype=btrfs --grow
+
+# Btrfs volume
+btrfs none --label=arch btrfs.01
+
+# Btrfs subvolumes
+btrfs /     --subvol --name=root LABEL=arch
+btrfs /var  --subvol --name=var  LABEL=arch
+btrfs /home --subvol --name=home LABEL=arch
+"""

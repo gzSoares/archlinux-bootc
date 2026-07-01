@@ -1,0 +1,20 @@
+[Unit]
+Description=Portal service (xdg-desktop-portal)
+# Inicia após o D-Bus estar disponível na sessão do usuário.
+# Não depende de graphical-session.target para evitar deadlock
+# em compositors que não ativam esse target automaticamente (ex: KWin Wayland).
+After=dbus.socket
+# Requisito explícito do backend KDE
+Requires=xdg-desktop-portal-kde.service
+
+[Service]
+Type=dbus
+BusName=org.freedesktop.portal.Desktop
+ExecStart=/usr/libexec/xdg-desktop-portal
+# Reiniciar automaticamente em caso de falha
+Restart=on-failure
+RestartSec=3
+Slice=session.slice
+
+[Install]
+WantedBy=default.target
