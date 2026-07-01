@@ -4,7 +4,6 @@ on:
   push:
     branches: [main]
   schedule:
-    # Rebuild semanal para manter pacotes atualizados
     - cron: "0 4 * * 0"
   workflow_dispatch:
 
@@ -49,11 +48,18 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      # GHCR requires lowercase — github.repository may contain uppercase letters
+      - name: Lowercase image name
+        id: lower
+        run: |
+          echo "image=$(echo '${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}' | tr '[:upper:]' '[:lower:]')" \
+            >> "$GITHUB_OUTPUT"
+
       - name: Extract metadata
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          images: ${{ steps.lower.outputs.image }}
           tags: |
             type=raw,value=latest,enable={{is_default_branch}}
             type=sha,prefix=sha-
@@ -65,12 +71,11 @@ jobs:
           context: .
           file: ./Containerfile
           push: true
-          # provenance=false é necessário para compatibilidade com bootc
           provenance: false
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:buildcache
-          cache-to: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:buildcache,mode=max
+          cache-from: type=registry,ref=${{ steps.lower.outputs.image }}:buildcache
+          cache-to: type=registry,ref=${{ steps.lower.outputs.image }}:buildcache,mode=max
 
   build-iso:
     runs-on: ubuntu-latest
@@ -112,7 +117,7 @@ jobs:
             quay.io/centos-bootc/bootc-image-builder:latest \
             --type anaconda-iso \
             --rootfs btrfs \
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+            $(echo '${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}' | tr '[:upper:]' '[:lower:]'):latest
 
       - name: Upload ISO artifact
         uses: actions/upload-artifact@v4
