@@ -1,38 +1,29 @@
 name: Build Image (ISO)
 
 on:
-  # Disparo manual com inputs configuráveis
   workflow_dispatch:
     inputs:
       image_tag:
-        description: "Tag da imagem OCI a usar (ex: latest, sha-abc1234)"
+        description: "OCI image tag (e.g. latest, sha-abc1234)"
         required: false
         default: "latest"
       rootfs:
-        description: "Sistema de arquivos raiz"
+        description: "Root filesystem"
         required: false
         default: "btrfs"
         type: choice
-        options:
-          - btrfs
-          - xfs
-          - ext4
+        options: [btrfs, xfs, ext4]
       image_type:
-        description: "Tipo de imagem a gerar"
+        description: "Output image type"
         required: false
         default: "anaconda-iso"
         type: choice
-        options:
-          - anaconda-iso
-          - raw
-          - qcow2
-          - vmdk
+        options: [anaconda-iso, raw, qcow2, vmdk]
       upload_release:
-        description: "Publicar ISO como GitHub Release"
+        description: "Publish as GitHub Release"
         required: false
         default: false
         type: boolean
-  # Também pode ser chamado pelo build.yml após push
   workflow_call:
     inputs:
       image_tag:
@@ -87,13 +78,14 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Set resolved tag
+      - name: Resolve variables
         id: vars
         run: |
           TAG="${{ inputs.image_tag || 'latest' }}"
           TYPE="${{ inputs.image_type || 'anaconda-iso' }}"
           ROOTFS="${{ inputs.rootfs || 'btrfs' }}"
-          IMAGE="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${TAG}"
+          # GHCR requires lowercase
+          IMAGE="$(echo '${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}' | tr '[:upper:]' '[:lower:]'):${TAG}"
           echo "tag=${TAG}"       >> "$GITHUB_OUTPUT"
           echo "type=${TYPE}"     >> "$GITHUB_OUTPUT"
           echo "rootfs=${ROOTFS}" >> "$GITHUB_OUTPUT"
@@ -123,7 +115,7 @@ jobs:
       - name: List output
         run: ls -lh output/
 
-      - name: Upload as workflow artifact
+      - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: archlinux-bootc-${{ steps.vars.outputs.type }}-${{ github.run_number }}
@@ -141,6 +133,6 @@ jobs:
             **Type:** `${{ steps.vars.outputs.type }}`
             **Rootfs:** `${{ steps.vars.outputs.rootfs }}`
             **OCI image:** `${{ steps.vars.outputs.image }}`
-            **Built from commit:** ${{ github.sha }}
+            **Commit:** ${{ github.sha }}
           files: output/*
           fail_on_unmatched_files: false
