@@ -14,8 +14,7 @@
 #     ghcr.io/gzsoares/archlinux-bootc:latest
 
 # -----------------------------------------------------------------------------
-# Default user created during installation
-# Change password hash with: openssl passwd -6
+# Default user — change password hash with: openssl passwd -6
 # -----------------------------------------------------------------------------
 [[customizations.user]]
 name = "user"
@@ -24,10 +23,10 @@ password = "$6$rounds=65536$changeme$REPLACETHISWITHAREALHASH"
 
 [[customizations.user]]
 name = "root"
-password = "!"  # root login disabled
+password = "!"
 
 # -----------------------------------------------------------------------------
-# Anaconda modules to enable
+# Anaconda modules
 # -----------------------------------------------------------------------------
 [customizations.installer.modules]
 enable = [
@@ -43,28 +42,18 @@ enable = [
 # -----------------------------------------------------------------------------
 [customizations.installer.kickstart]
 contents = """
-# Language and timezone
 lang en_US.UTF-8
 keyboard us
 timezone UTC --utc
 
-# Btrfs partitioning
 clearpart --all --initlabel
 zerombr
 
-# EFI partition
 part /boot/efi --fstype=efi --size=600 --fsoptions="umask=0077,shortname=winnt"
+part /boot     --fstype=ext4 --size=2048
+part btrfs.01  --fstype=btrfs --grow
 
-# /boot
-part /boot --fstype=ext4 --size=2048
-
-# Btrfs physical volume (rest of disk)
-part btrfs.01 --fstype=btrfs --grow
-
-# Btrfs volume
-btrfs none --label=arch btrfs.01
-
-# Btrfs subvolumes
+btrfs none  --label=arch btrfs.01
 btrfs /     --subvol --name=root LABEL=arch
 btrfs /var  --subvol --name=var  LABEL=arch
 btrfs /home --subvol --name=home LABEL=arch
